@@ -1,0 +1,111 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches: [ main ]          # triggers when PR merges to main
+
+jobs:
+  deploy-to-aws:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        run: echo "✅ Connecting to AWS using secret credentials..."
+
+      - name: Build Docker Image
+        run: echo "✅ Building Docker image... my-app:${{ github.sha }}"
+
+      - name: Push Image to AWS ECR
+        run: echo "✅ Pushing Docker image to AWS ECR registry..."
+
+      - name: Deploy to AWS ECS
+        run: echo "✅ Deploying new version to AWS ECS cluster..."
+
+      - name: Health Check
+        run: echo "✅ App is live at https://myapp.aws.com — Health check passed!"
+
+      - name: Notify Team on Slack
+        run: echo "✅ Slack notification sent — Deployment successful! 🚀"
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: deploy-to-aws        # waits for staging to pass first
+    environment: production     # requires manual approval
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Production
+        run: echo "✅ Deploying to Production on AWS..."
+
+      - name: Production Health Check
+        run: echo "✅ Production is live! All systems green 🟢"
+
+      - name: Notify Team
+        run: echo "✅ Production deployment successful! Notifying team..."
+```
+
+Click **Commit changes** → commit directly to main.
+
+---
+
+## Step 3: Watch Both Pipelines Run
+
+Go to **Actions tab** — you should see:
+
+| Pipeline | Status | Trigger |
+|----------|--------|---------|
+| CI Pipeline | ⏭️ skipped | only runs on PR |
+| CD Pipeline | 🟡 running | triggered by push to main |
+
+---
+
+## Step 4: Trigger the CI Pipeline
+
+To see CI run, we need a **Pull Request**. Do this:
+
+**1. Create a new branch on GitHub:**
+- Go to your repo main page
+- Click **"main"** branch dropdown
+- Type `feature/test-ci` → click **"Create branch"**
+
+**2. Edit any file on that branch:**
+- Open `README.md` → click pencil icon
+- Add a line: `Testing CI pipeline`
+- Commit to `feature/test-ci` branch
+
+**3. Raise a Pull Request:**
+- GitHub will show **"Compare & pull request"** banner
+- Click it → Click **"Create pull request"**
+
+**CI pipeline triggers automatically! ✅**
+
+---
+
+## What You'll See
+```
+CI Pipeline
+├── ✅ Checkout code
+├── ✅ Set up Java 17
+├── ✅ Compile
+├── ✅ Run Unit Tests
+├── ✅ Code Quality Check
+├── ✅ Build JAR
+└── ✅ Security Scan
+
+CD Pipeline
+├── deploy-to-aws
+│   ├── ✅ Configure AWS Credentials
+│   ├── ✅ Build Docker Image
+│   ├── ✅ Push to AWS ECR
+│   ├── ✅ Deploy to AWS ECS
+│   ├── ✅ Health Check
+│   └── ✅ Notify Team
+└── deploy-production
+    ├── ⏸️ Waiting for manual approval...
+    ├── ✅ Deploy to Production
+    └── ✅ Production Health Check
